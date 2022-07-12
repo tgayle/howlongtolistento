@@ -2,13 +2,13 @@ import type { Album, Artist, Track } from "@prisma/client";
 import { db } from "./db.server";
 import type {
   AlbumItem,
-  RemoteArtist,
   ArtistItem,
   GetAlbumsResponse,
   GetAlbumTracksResponse,
   SearchResponse,
   TrackItem,
 } from "./types";
+import { getTimeUnits, TimeUnits } from "./util";
 type TokenInfo = { expiration: number; token: string };
 
 declare global {
@@ -236,6 +236,7 @@ async function fetchAlbumTracks(albumId: string): Promise<TrackItem[]> {
 export type TrackTimingResponse = {
   artist: Artist;
   totalTimeMs: number;
+  time: TimeUnits;
   albums: {
     name: string;
     id: string;
@@ -254,6 +255,7 @@ export async function getArtistTrackTiming(
       albums: [],
       artist,
       totalTimeMs: artist.totalRuntime,
+      time: getTimeUnits(artist.totalRuntime),
     };
   }
 
@@ -292,6 +294,7 @@ export async function getArtistTrackTiming(
     artist,
     totalTimeMs: artist.totalRuntime,
     albums: [],
+    time: getTimeUnits(artist.totalRuntime),
   };
 }
 
@@ -301,7 +304,7 @@ async function refreshToken() {
     return global.tokenInfo.token;
   }
 
-  console.trace("Refreshing token!");
+  console.log("Refreshing token!");
   const signedSecret = Buffer.from(
     `${process.env.SPOTIFY_ID}:${process.env.SPOTIFY_SECRET}`
   ).toString("base64");

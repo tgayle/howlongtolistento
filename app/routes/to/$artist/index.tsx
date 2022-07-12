@@ -1,4 +1,4 @@
-import { Response, type LoaderFunction } from "@remix-run/node";
+import { MetaFunction, Response, type LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { SearchArtistBar } from "~/components/SearchArtistBar";
 import {
@@ -6,33 +6,12 @@ import {
   type TrackTimingResponse,
 } from "~/spotify.server";
 
-export default function Index() {
-  const { albums, artist, totalTimeMs } = useLoaderData<TrackTimingResponse>();
-
-  const totalSeconds = totalTimeMs / 1000;
-  const secondsRemaining = totalSeconds % 60;
-  const minutes = (totalSeconds / 60) % 60;
-  const hours = (totalSeconds / 60 / 60) % 60;
-  const days = totalSeconds / 60 / 60 / 24;
-
-  return (
-    <div>
-      <SearchArtistBar initialValue={artist.name} key={artist.id} />
-
-      <div className="text-white">
-        <p>It'll take</p>
-        <div className="flex justify-center items-center flex-col">
-          <TimeDurationItem unit="days" time={days} />
-          <TimeDurationItem unit="hours" time={hours} />
-          <TimeDurationItem unit="minutes" time={minutes} />
-          <TimeDurationItem unit="seconds" time={secondsRemaining} />
-
-          <p>{totalSeconds} seconds total</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+export const meta: MetaFunction = ({ data }: { data: TrackTimingResponse }) => {
+  return {
+    title: `How long to listen to ${data.artist.name}?`,
+    description: `It would take ${data.time.string} to listen to ${data.artist.name}`,
+  };
+};
 
 export const loader: LoaderFunction = async ({
   params: { artist: artistId },
@@ -41,11 +20,39 @@ export const loader: LoaderFunction = async ({
   return getArtistTrackTiming(artistId);
 };
 
-function TimeDurationItem({ unit, time }: { unit: string; time: number }) {
+export default function Index() {
+  const {
+    albums,
+    artist,
+    time: { days, hours, minutes, seconds, totalSeconds },
+  } = useLoaderData<TrackTimingResponse>();
   return (
-    <div className="p-4 text-center">
-      <p>{time.toPrecision(2)}</p>
-      <p>{unit}</p>
+    <div>
+      <SearchArtistBar initialValue={artist.name} key={artist.id} />
+
+      <div className="text-white text-center">
+        <p>It'll take</p>
+        <div className="flex justify-center items-center gap-4 py-2">
+          <TimeDurationItem unit="day" time={days} />
+          <TimeDurationItem unit="hour" time={hours} />
+          <TimeDurationItem unit="minute" time={minutes} />
+          <TimeDurationItem unit="second" time={seconds} />
+        </div>
+        <p>{totalSeconds} seconds total</p>
+      </div>
+    </div>
+  );
+}
+
+function TimeDurationItem({ unit, time }: { unit: string; time: number }) {
+  if (time <= 0) return null;
+  return (
+    <div className="text-center w-20 h-20 flex flex-col items-center justify-center border rounded-md">
+      <p>{time.toFixed(0)}</p>
+      <p>
+        {unit}
+        {time > 1 ? "s" : ""}
+      </p>
     </div>
   );
 }
