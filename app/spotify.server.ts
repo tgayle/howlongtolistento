@@ -341,3 +341,7 @@ function chunked<T>(arr: T[], size: number): T[][] {
 
   return result;
 }
+
+export async function getArtistCount() {
+  return db.artist.count();
+}
