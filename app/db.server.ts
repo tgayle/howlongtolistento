@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === "production") {
 } else {
   if (!global.__db) {
     console.log("creating client");
-    global.__db = new PrismaClient();
+    global.__db = new PrismaClient({ log: ["query"] });
   }
   db = global.__db;
 }

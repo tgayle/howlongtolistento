@@ -9,6 +9,7 @@ export type TimeUnits = {
   minutes: number;
   seconds: number;
   totalSeconds: number;
+  cellsUsed: 0 | 1 | 2 | 3 | 4;
   string: string;
 };
 
@@ -20,8 +21,6 @@ export function getTimeUnits(totalTimeMs: number): TimeUnits {
   const minutes = Math.floor(hourFraction / MINUTE);
   const minuteFraction = hourFraction % MINUTE;
   const seconds = Math.floor(minuteFraction / SECOND);
-
-  console.log(days, hours, minutes, seconds);
 
   const all = [
     pluralize(days, "day"),
@@ -36,17 +35,12 @@ export function getTimeUnits(totalTimeMs: number): TimeUnits {
     minutes,
     seconds,
     totalSeconds: Math.ceil(totalTimeMs / SECOND),
-    string: all.reduce((acc, duration, index) => {
-      if (index === all.length - 2) {
-        return `${acc} and ${duration}`;
-      } else {
-        return `${acc}, ${duration}`;
-      }
-    }, ""),
+    string: all.join(", "),
+    cellsUsed: all.length as TimeUnits["cellsUsed"],
   };
 }
 
 function pluralize(count: number, word: string) {
-  if (count < 0) return "";
+  if (count <= 0) return "";
   return `${count} ${word}${count > 1 ? "s" : ""}`;
 }

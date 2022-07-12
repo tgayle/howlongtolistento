@@ -15,17 +15,28 @@ model Track {
   name    String
   runtime Int
 
-  artists Artist[]
-  albumId String
-  album   Album    @relation(references: [id], fields: [albumId], onDelete: Cascade)
+  albumId            String
+  album              Album                @relation(references: [id], fields: [albumId], onDelete: Cascade)
+  ArtistTrackMapping ArtistTrackMapping[]
 }
 
 model Artist {
   id           String  @id
   name         String
   totalRuntime Int
+  image        String?
   albums       Album[]
-  tracks       Track[]
+
+  ArtistTrackMapping ArtistTrackMapping[]
+}
+
+model ArtistTrackMapping {
+  artistId String
+  trackId  String
+  track    Track  @relation(references: [id], fields: [trackId], onDelete: Cascade)
+  artist   Artist @relation(references: [id], fields: [artistId], onDelete: Cascade)
+
+  @@id([artistId, trackId])
 }
 
 model Album {
@@ -34,5 +45,6 @@ model Album {
   artist       Artist  @relation(fields: [artistId], references: [id], onDelete: Cascade)
   artistId     String
   totalRuntime Int
+  image        String?
   tracks       Track[]
 }

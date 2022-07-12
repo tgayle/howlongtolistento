@@ -1,6 +1,5 @@
 import type { LinksFunction, MetaFunction } from "@remix-run/node";
 import {
-  Link,
   Links,
   LiveReload,
   Meta,
@@ -16,6 +15,13 @@ export const meta: MetaFunction = () => ({
   viewport: "width=device-width,initial-scale=1",
 });
 
+export const links: LinksFunction = () => [
+  {
+    rel: "stylesheet",
+    href: styles,
+  },
+];
+
 export default function App() {
   return (
     <html lang="en" className="bg-gray-700 ">
@@ -23,7 +29,7 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body className="h-screen w-screen overflow-hidden font-sans">
+      <body className="h-screen w-screen overflow-x-hidden font-sans flex flex-col">
         <header className="grid grid-cols-3 place-items-center px-8 py-4">
           <div className="justify-self-end flex gap-4 col-start-3"></div>
         </header>
@@ -32,26 +38,10 @@ export default function App() {
         <Scripts />
         <LiveReload />
 
-        <footer className="absolute bottom-1 w-full text-gray-50 text-center">
-          Powered by Remix, made by{" "}
-          <a href="https://github.com/tgayle">@tgayle</a>
+        <footer className="w-full text-gray-50 text-left p-1">
+          made by <a href="https://twitter.com/almostnottravis">trav</a>
         </footer>
       </body>
     </html>
   );
 }
-
-export const links: LinksFunction = () => [
-  {
-    rel: "stylesheet",
-    href: styles,
-  },
-];
-
-const Button: React.FC = ({ children, ...rest }) => {
-  return (
-    <button {...rest} className="hover:bg-gray-800 p-2 rounded-md text-white">
-      {children}
-    </button>
-  );
-};
