@@ -12,6 +12,7 @@ import styles from "./tailwind.css";
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
   title: "how long to listen to?",
+  description: "How long would it take to listen to an artist's songs?",
   viewport: "width=device-width,initial-scale=1",
 });
 
