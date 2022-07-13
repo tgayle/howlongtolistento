@@ -8,6 +8,7 @@ import { SearchArtistBar } from "~/components/SearchArtistBar";
 import {
   getArtistById,
   getArtistTrackTiming,
+  searchArtists,
   type TrackTimingResponse,
 } from "~/spotify.server";
 import { getTimeUnits } from "~/util";
@@ -31,9 +32,19 @@ export const meta: MetaFunction = ({
 export const loader: LoaderFunction = async ({
   params: { artist: artistId },
 }) => {
-  if (!artistId || !(await getArtistById(artistId))) return redirect("/");
+  if (!artistId?.trim()) return redirect("/");
 
-  return getArtistTrackTiming(artistId);
+  if (await getArtistById(artistId)) {
+    return getArtistTrackTiming(artistId);
+  }
+
+  // treat the path as a search request:
+  const results = await searchArtists(artistId);
+  if (results.length) {
+    return redirect(`/to/${results[0].id}`);
+  }
+
+  return redirect("/");
 };
 
 export default function Index() {
