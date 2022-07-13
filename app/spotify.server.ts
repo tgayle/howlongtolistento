@@ -27,11 +27,11 @@ export type SearchArtistResponse = LocalArtist[];
 export async function searchArtists(
   query: string
 ): Promise<SearchArtistResponse> {
-  if (query.length < 3) return [];
+  if (query.trim().length < 3) return [];
 
   await refreshToken();
   const res: SearchResponse = await fetch(
-    `https://api.spotify.com/v1/search?type=artist&q=${query}&limit=5`,
+    `https://api.spotify.com/v1/search?type=artist&q=${query.trim()}&limit=5`,
     {
       headers: {
         Authorization: `Bearer ${global.tokenInfo?.token}`,
