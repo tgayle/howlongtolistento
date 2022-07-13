@@ -3,13 +3,15 @@ import { type LocalArtist } from "~/spotify.server";
 
 export function ArtistItem({
   artist: { id, image, name },
+  className,
 }: {
   artist: LocalArtist;
+  className?: string;
 }) {
   return (
     <Link to={`/to/${id}`}>
       <li
-        className="flex h-18 px-4 py-2 text-white items-center gap-4 hover:bg-gray-300 rounded-md transition-all hover:text-black"
+        className={`flex h-18 px-4 py-2 text-white items-center gap-4 hover:bg-gray-300 rounded-md transition-all hover:text-black ${className}`}
         style={{ opacity: 1 }}
       >
         <div className="aspect-square rounded-full w-12 h-12 bg-slate-400 flex justify-center items-center">

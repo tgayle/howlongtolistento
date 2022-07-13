@@ -25,13 +25,14 @@ export type LocalArtist = {
 export type SearchArtistResponse = LocalArtist[];
 
 export async function searchArtists(
-  query: string
+  query: string,
+  limit: number = 5
 ): Promise<SearchArtistResponse> {
   if (query.trim().length < 3) return [];
 
   await refreshToken();
   const res: SearchResponse = await fetch(
-    `https://api.spotify.com/v1/search?type=artist&q=${query.trim()}&limit=5`,
+    `https://api.spotify.com/v1/search?type=artist&q=${query.trim()}&limit=${limit}`,
     {
       headers: {
         Authorization: `Bearer ${global.tokenInfo?.token}`,
@@ -316,6 +317,7 @@ async function refreshToken() {
     body: "grant_type=client_credentials",
   });
 
+  console.log(`Token refreshed ${response.status}`);
   const { access_token, expires_in } = await response.json();
 
   global.tokenInfo = {
@@ -324,22 +326,6 @@ async function refreshToken() {
   };
 
   return global.tokenInfo.token;
-}
-
-function chunked<T>(arr: T[], size: number): T[][] {
-  const result = arr.reduce((resultArray: T[][], item, index) => {
-    const chunkIndex = Math.floor(index / size);
-
-    if (!resultArray[chunkIndex]) {
-      resultArray[chunkIndex] = []; // start a new chunk
-    }
-
-    resultArray[chunkIndex].push(item);
-
-    return resultArray;
-  }, []);
-
-  return result;
 }
 
 export async function getArtistCount() {

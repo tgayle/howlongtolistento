@@ -14,7 +14,7 @@ export function SearchArtistBar({ initialValue }: { initialValue?: string }) {
 
       <autocomplete.Form
         method="get"
-        action="/artist-autocomplete"
+        action="/search"
         className="block relative"
       >
         <div className="relative my-4">
