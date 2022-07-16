@@ -1,4 +1,5 @@
 import type { Album, Artist, Track } from "@prisma/client";
+import { validateToken } from "./data/auth.server";
 import { db } from "./db.server";
 import type {
   AlbumItem,
@@ -10,54 +11,13 @@ import type {
   TrackItem,
 } from "./types";
 import { getTimeUnits, type TimeUnits } from "./util";
-type TokenInfo = { expiration: number; token: string };
-
-declare global {
-  var tokenInfo: TokenInfo | undefined;
-}
-
-export type LocalArtist = {
-  image: string | null;
-  name: string;
-  id: string;
-};
-
-export type SearchArtistResponse = LocalArtist[];
-
-export async function searchArtists(
-  query: string,
-  limit: number = 5
-): Promise<SearchArtistResponse> {
-  if (query.trim().length < 3) return [];
-
-  await refreshToken();
-  const res: SearchResponse = await fetch(
-    `https://api.spotify.com/v1/search?type=artist&q=${query.trim()}&limit=${limit}`,
-    {
-      headers: {
-        Authorization: `Bearer ${global.tokenInfo?.token}`,
-      },
-    }
-  ).then((it) => {
-    console.log(it.status);
-    return it.json();
-  });
-
-  return (
-    res.artists.items?.map((item) => ({
-      id: item.id,
-      name: item.name,
-      image: item.images?.at(-1)?.url || null,
-    })) ?? []
-  );
-}
 
 export async function getArtistById(id: string): Promise<Artist | null> {
   const localArtist = await db.artist.findUnique({ where: { id } });
 
   if (localArtist) return localArtist;
 
-  await refreshToken();
+  await validateToken();
 
   const res = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
     headers: {
@@ -115,7 +75,7 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   });
   if (localAlbums.length) return localAlbums;
 
-  await refreshToken();
+  await validateToken();
 
   let url = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=50`;
   const albums: AlbumItem[] = [];
@@ -221,7 +181,7 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
 
 async function fetchAlbumTracks(albumId: string): Promise<TrackItem[]> {
   console.log("Fetching tracks for album", albumId);
-  await refreshToken();
+  await validateToken();
 
   let url:
     | string
@@ -279,7 +239,7 @@ export async function getArtistTrackTiming(
     };
   }
 
-  await refreshToken();
+  await validateToken();
 
   await aggregateSongPlaytime(artistId);
   artist = (await getArtistById(artistId))!;
@@ -295,37 +255,6 @@ export async function getArtistTrackTiming(
     })),
     time: getTimeUnits(artist.totalRuntime),
   };
-}
-
-const SPOTIFY = "https://accounts.spotify.com";
-async function refreshToken() {
-  if (global.tokenInfo && global.tokenInfo.expiration > Date.now()) {
-    return global.tokenInfo.token;
-  }
-
-  console.log("Refreshing token!");
-  const signedSecret = Buffer.from(
-    `${process.env.SPOTIFY_ID}:${process.env.SPOTIFY_SECRET}`
-  ).toString("base64");
-
-  const response = await fetch(`${SPOTIFY}/api/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${signedSecret}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-
-  console.log(`Token refreshed ${response.status}`);
-  const { access_token, expires_in } = await response.json();
-
-  global.tokenInfo = {
-    token: access_token,
-    expiration: Date.now() + expires_in * 1000,
-  };
-
-  return global.tokenInfo.token;
 }
 
 export async function getArtistCount() {
