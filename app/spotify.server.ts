@@ -27,17 +27,12 @@ export async function searchArtists(
   if (query.trim().length < 3) return [];
 
   await SpotifyAuth.refreshToken();
-  const res: SearchResponse = await fetch(
-    `https://api.spotify.com/v1/search?type=artist&q=${query.trim()}&limit=${limit}`,
-    {
-      headers: {
-        Authorization: `Bearer ${global.tokenInfo?.token}`,
-      },
-    }
-  ).then((it) => {
-    console.log(it.status);
-    return it.json();
-  });
+  const { data: res, success } = await SpotifyAuth.signedFetch<SearchResponse>(
+    `https://api.spotify.com/v1/search?type=artist&q=${query.trim()}&limit=${limit}`
+  );
+
+  // TODO: Handle errors
+  if (!success) return [];
 
   return (
     res.artists.items?.map((item) => ({
@@ -55,15 +50,12 @@ export async function getArtistById(id: string): Promise<Artist | null> {
 
   await SpotifyAuth.refreshToken();
 
-  const res = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
-    headers: {
-      Authorization: `Bearer ${global.tokenInfo?.token}`,
-    },
-  });
+  const { data: artist, success } = await SpotifyAuth.signedFetch<ArtistItem>(
+    `https://api.spotify.com/v1/artists/${id}`
+  );
 
-  if (res.status === 400) return null;
+  if (!success) return null;
 
-  const artist: ArtistItem = await res.json();
   console.log(artist);
 
   const newArtist = await db.artist.upsert({
@@ -117,11 +109,10 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   const albums: AlbumItem[] = [];
 
   do {
-    const res: GetAlbumsResponse = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${global.tokenInfo?.token}`,
-      },
-    }).then((it) => it.json());
+    const { data: res, success } =
+      await SpotifyAuth.signedFetch<GetAlbumsResponse>(url);
+    // TODO: Handle errors
+    if (!success) break;
 
     albums.push(...res.items);
 
@@ -225,15 +216,15 @@ async function fetchAlbumTracks(albumId: string): Promise<TrackItem[]> {
   const tracks: TrackItem[] = [];
 
   do {
-    const res: GetAlbumTracksResponse = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${global.tokenInfo?.token}`,
-      },
-    }).then((it) => it.json());
+    const { data: res, success } =
+      await SpotifyAuth.signedFetch<GetAlbumTracksResponse>(url);
+
+    // TODO: Handle errors
+    if (!success) break;
 
     tracks.push(...(res.items ?? []));
 
-    url = res.next;
+    url = res.next as string | null;
   } while (url);
 
   return tracks;

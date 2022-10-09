@@ -42,4 +42,44 @@ export class SpotifyAuth {
 
     return global.tokenInfo.token;
   }
+
+  static async signedFetch<T>(url: string): Promise<APIResponse<T>> {
+    await this.refreshToken();
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${global.tokenInfo?.token}`,
+      },
+    });
+
+    if (response.status >= 200 && response.status < 300) {
+      return {
+        status: response.status,
+        data: await response.json(),
+        success: true,
+      };
+    }
+
+    console.warn("Error fetching URL", url);
+    console.warn(
+      `  Got response ${response.status} '${await response.text()}'`
+    );
+
+    return {
+      status: response.status,
+      data: null,
+      success: false,
+    };
+  }
 }
+
+type APIResponse<T> =
+  | {
+      status: number;
+      data: T | null;
+      success: false;
+    }
+  | {
+      status: number;
+      data: T;
+      success: true;
+    };

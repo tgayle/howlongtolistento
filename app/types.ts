@@ -98,11 +98,11 @@ export enum ReleaseDatePrecision {
 
 export interface GetAlbumTracksResponse {
   href: string;
-  items?: TrackItem[];
+  items: TrackItem[] | undefined;
   limit: number;
-  next: null;
+  next: string | null;
   offset: number;
-  previous: null;
+  previous: string | null;
   total: number;
 }
 
