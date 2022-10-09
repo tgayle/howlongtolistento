@@ -1,6 +1,7 @@
 import type { Album, Artist, Track } from "@prisma/client";
 import { db } from "./db.server";
 import { SpotifyAuth } from "./spotify/auth.server";
+import LocalFetcher from "./spotify/LocalFetcher.server";
 import type {
   AlbumItem,
   ArtistItem,
@@ -44,7 +45,7 @@ export async function searchArtists(
 }
 
 export async function getArtistById(id: string): Promise<Artist | null> {
-  const localArtist = await db.artist.findUnique({ where: { id } });
+  const localArtist = await LocalFetcher.getArtistById(id);
 
   if (localArtist) return localArtist;
 
@@ -57,22 +58,7 @@ export async function getArtistById(id: string): Promise<Artist | null> {
   if (!success) return null;
 
   console.log(artist);
-
-  const newArtist = await db.artist.upsert({
-    where: { id },
-    create: {
-      id,
-      name: artist.name,
-      totalRuntime: -1,
-      image: artist.images.at(-1)?.url ?? null,
-    },
-    update: {
-      name: artist.name,
-      image: artist.images.at(-1)?.url ?? null,
-    },
-  });
-
-  return newArtist;
+  return LocalFetcher.saveArtist(artist);
 }
 
 async function aggregateSongPlaytime(artistId: string) {
@@ -96,11 +82,7 @@ async function aggregateSongPlaytime(artistId: string) {
 }
 
 export async function getArtistAlbums(artistId: string): Promise<Album[]> {
-  const localAlbums = await db.album.findMany({
-    where: { artistId: artistId },
-    distinct: "name",
-    orderBy: { totalRuntime: "desc" },
-  });
+  const localAlbums = await LocalFetcher.getArtistAlbums(artistId);
   if (localAlbums.length) return localAlbums;
 
   await SpotifyAuth.refreshToken();
@@ -199,11 +181,7 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
     }ms`
   );
 
-  return await db.album.findMany({
-    where: { artistId: artistId },
-    distinct: "name",
-    orderBy: { totalRuntime: "desc" },
-  });
+  return LocalFetcher.getArtistAlbums(artistId);
 }
 
 async function fetchAlbumTracks(albumId: string): Promise<TrackItem[]> {
