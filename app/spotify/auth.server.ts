@@ -7,9 +7,15 @@ declare global {
 const SPOTIFY = "https://accounts.spotify.com";
 
 export class SpotifyAuth {
+  static isTokenExpired(): boolean {
+    if (!global.tokenInfo) return true;
+
+    return global.tokenInfo.expiration < Date.now();
+  }
+
   static async refreshToken() {
-    if (global.tokenInfo && global.tokenInfo.expiration > Date.now()) {
-      return global.tokenInfo.token;
+    if (!this.isTokenExpired()) {
+      return global.tokenInfo!.token;
     }
 
     console.log("Refreshing token!");
