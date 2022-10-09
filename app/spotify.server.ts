@@ -20,7 +20,6 @@ export async function searchArtists(
 ): Promise<SearchArtistResponse> {
   if (query.trim().length < 3) return [];
 
-  await SpotifyAuth.refreshToken();
   const { data: res, success } = await RemoteFetcher.searchArtists(
     query,
     limit
@@ -41,8 +40,6 @@ export async function searchArtists(
 export async function getArtistById(id: string): Promise<Artist | null> {
   const localArtist = await LocalFetcher.getArtistById(id);
   if (localArtist) return localArtist;
-
-  await SpotifyAuth.refreshToken();
 
   const { data: artist, success } = await RemoteFetcher.getArtistById(id);
   if (!success) return null;
@@ -74,8 +71,6 @@ async function aggregateSongPlaytime(artistId: string) {
 export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   const localAlbums = await LocalFetcher.getArtistAlbums(artistId);
   if (localAlbums.length) return localAlbums;
-
-  await SpotifyAuth.refreshToken();
 
   const albums = await RemoteFetcher.getArtistAlbums(artistId);
 
@@ -200,8 +195,6 @@ export async function getArtistTrackTiming(
     };
   }
 
-  await SpotifyAuth.refreshToken();
-
   await aggregateSongPlaytime(artistId);
   artist = (await getArtistById(artistId))!;
 
@@ -216,8 +209,4 @@ export async function getArtistTrackTiming(
     })),
     time: getTimeUnits(artist.totalRuntime),
   };
-}
-
-export async function getArtistCount() {
-  return db.artist.count();
 }

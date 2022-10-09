@@ -1,6 +1,6 @@
-import { getArtistCount } from "~/spotify.server";
+import LocalFetcherServer from "~/spotify/LocalFetcher.server";
 
 export async function loader() {
-  await getArtistCount();
+  await LocalFetcherServer.getArtistCount();
   return new Response("howdy!", { status: 200 });
 }

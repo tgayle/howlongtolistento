@@ -47,6 +47,10 @@ class LocalFetcher implements BaseFetcher {
       },
     });
   }
+
+  async getArtistCount() {
+    return db.artist.count();
+  }
 }
 
 export default new LocalFetcher();
