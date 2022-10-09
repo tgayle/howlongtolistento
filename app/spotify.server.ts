@@ -1,16 +1,9 @@
-import type { Album, Artist, Track } from "@prisma/client";
+import type { Album, Artist } from "@prisma/client";
 import { db } from "./db.server";
 import { SpotifyAuth } from "./spotify/auth.server";
 import LocalFetcher from "./spotify/LocalFetcher.server";
-import type {
-  AlbumItem,
-  ArtistItem,
-  GetAlbumsResponse,
-  GetAlbumTracksResponse,
-  RemoteArtist,
-  SearchResponse,
-  TrackItem,
-} from "./types";
+import RemoteFetcher from "./spotify/RemoteFetcher.server";
+import type { RemoteArtist } from "./types";
 import { getTimeUnits, type TimeUnits } from "./util";
 
 export type LocalArtist = {
@@ -28,8 +21,9 @@ export async function searchArtists(
   if (query.trim().length < 3) return [];
 
   await SpotifyAuth.refreshToken();
-  const { data: res, success } = await SpotifyAuth.signedFetch<SearchResponse>(
-    `https://api.spotify.com/v1/search?type=artist&q=${query.trim()}&limit=${limit}`
+  const { data: res, success } = await RemoteFetcher.searchArtists(
+    query,
+    limit
   );
 
   // TODO: Handle errors
@@ -46,15 +40,11 @@ export async function searchArtists(
 
 export async function getArtistById(id: string): Promise<Artist | null> {
   const localArtist = await LocalFetcher.getArtistById(id);
-
   if (localArtist) return localArtist;
 
   await SpotifyAuth.refreshToken();
 
-  const { data: artist, success } = await SpotifyAuth.signedFetch<ArtistItem>(
-    `https://api.spotify.com/v1/artists/${id}`
-  );
-
+  const { data: artist, success } = await RemoteFetcher.getArtistById(id);
   if (!success) return null;
 
   console.log(artist);
@@ -87,26 +77,16 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
 
   await SpotifyAuth.refreshToken();
 
-  let url = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=50`;
-  const albums: AlbumItem[] = [];
-
-  do {
-    const { data: res, success } =
-      await SpotifyAuth.signedFetch<GetAlbumsResponse>(url);
-    // TODO: Handle errors
-    if (!success) break;
-
-    albums.push(...res.items);
-
-    url = res.next;
-  } while (url);
+  const albums = await RemoteFetcher.getArtistAlbums(artistId);
 
   console.log(`Got ${albums.length} albums`);
   const tracksByAlbum = await Promise.all(
     albums.map(
-      async (album) => [album.id, await fetchAlbumTracks(album.id)] as const
+      async (album) =>
+        [album.id, await RemoteFetcher.getAlbumTracks(album.id)] as const
     )
   );
+
   console.log(
     `Got ${tracksByAlbum.reduce(
       (sum, it) => sum + it[1].length,
@@ -182,30 +162,6 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   );
 
   return LocalFetcher.getArtistAlbums(artistId);
-}
-
-async function fetchAlbumTracks(albumId: string): Promise<TrackItem[]> {
-  console.log("Fetching tracks for album", albumId);
-  await SpotifyAuth.refreshToken();
-
-  let url:
-    | string
-    | null = `https://api.spotify.com/v1/albums/${albumId}/tracks?limit=50`;
-  const tracks: TrackItem[] = [];
-
-  do {
-    const { data: res, success } =
-      await SpotifyAuth.signedFetch<GetAlbumTracksResponse>(url);
-
-    // TODO: Handle errors
-    if (!success) break;
-
-    tracks.push(...(res.items ?? []));
-
-    url = res.next as string | null;
-  } while (url);
-
-  return tracks;
 }
 
 export type TrackTimingResponse = {

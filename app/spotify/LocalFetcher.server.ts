@@ -4,6 +4,15 @@ import { ArtistItem } from "~/types";
 import { BaseFetcher } from "./BaseFetcher";
 
 class LocalFetcher implements BaseFetcher {
+  searchArtists(query: string): Promise<Artist[]> {
+    return db.artist.findMany({
+      where: { name: { contains: query, mode: "insensitive" } },
+      orderBy: {
+        name: "asc",
+      },
+    });
+  }
+
   getArtistById(id: string): Promise<Artist | null> {
     return db.artist.findUnique({ where: { id } });
   }
