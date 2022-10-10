@@ -44,3 +44,7 @@ function pluralize(count: number, word: string) {
   if (count <= 0) return "";
   return `${count} ${word}${count > 1 ? "s" : ""}`;
 }
+
+export function sumBy<T>(arr: T[], selector: (it: T) => number): number {
+  return arr.reduce((sum, it) => sum + selector(it), 0);
+}
