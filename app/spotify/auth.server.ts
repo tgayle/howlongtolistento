@@ -72,14 +72,16 @@ export class SpotifyAuth {
   }
 }
 
-type APIResponse<T> =
-  | {
-      status: number;
-      data: T | null;
-      success: false;
-    }
-  | {
-      status: number;
-      data: T;
-      success: true;
-    };
+export type APIResponseSuccess<T> = {
+  status: number;
+  data: T;
+  success: true;
+};
+
+export type APIResponseError<T> = {
+  status: number;
+  data: T | null;
+  success: false;
+};
+
+export type APIResponse<T> = APIResponseSuccess<T> | APIResponseError<T>;

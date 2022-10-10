@@ -6,7 +6,7 @@ import {
   SearchResponse,
   TrackItem,
 } from "~/types";
-import { SpotifyAuth } from "./auth.server";
+import { APIResponse, SpotifyAuth } from "./auth.server";
 
 class RemoteFetcher {
   async getArtistById(id: string) {
@@ -15,25 +15,37 @@ class RemoteFetcher {
     );
   }
 
-  async getArtistAlbums(artistId: string): Promise<AlbumItem[]> {
+  async getArtistAlbums(artistId: string): Promise<APIResponse<AlbumItem[]>> {
     let url = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=50`;
     const albums: AlbumItem[] = [];
 
     do {
-      const { data: res, success } =
-        await SpotifyAuth.signedFetch<GetAlbumsResponse>(url);
-      // TODO: Handle errors
-      if (!success) break;
+      const {
+        data: res,
+        success,
+        status,
+      } = await SpotifyAuth.signedFetch<GetAlbumsResponse>(url);
+      if (!success) {
+        return {
+          data: albums,
+          success: false,
+          status,
+        };
+      }
 
       albums.push(...res.items);
 
       url = res.next;
     } while (url);
 
-    return albums;
+    return {
+      data: albums,
+      status: 200,
+      success: true,
+    };
   }
 
-  async getAlbumTracks(albumId: string): Promise<TrackItem[]> {
+  async getAlbumTracks(albumId: string): Promise<APIResponse<TrackItem[]>> {
     console.log("Fetching tracks for album", albumId);
     await SpotifyAuth.refreshToken();
 
@@ -43,18 +55,30 @@ class RemoteFetcher {
     const tracks: TrackItem[] = [];
 
     do {
-      const { data: res, success } =
-        await SpotifyAuth.signedFetch<GetAlbumTracksResponse>(url);
+      const {
+        data: res,
+        success,
+        status,
+      } = await SpotifyAuth.signedFetch<GetAlbumTracksResponse>(url);
 
-      // TODO: Handle errors
-      if (!success) break;
+      if (!success) {
+        return {
+          data: tracks,
+          success: false,
+          status,
+        };
+      }
 
       tracks.push(...(res.items ?? []));
 
       url = res.next as string | null;
     } while (url);
 
-    return tracks;
+    return {
+      data: tracks,
+      success: true,
+      status: 200,
+    };
   }
 
   async searchArtists(query: string, limit: number) {

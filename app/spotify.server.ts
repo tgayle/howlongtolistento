@@ -1,6 +1,8 @@
 import type { Album, Artist } from "@prisma/client";
+import { APIResponse, APIResponseSuccess } from "./spotify/auth.server";
 import LocalFetcher from "./spotify/LocalFetcher.server";
 import RemoteFetcher from "./spotify/RemoteFetcher.server";
+import { TrackItem } from "./types";
 import { getTimeUnits, sumBy, type TimeUnits } from "./util";
 
 export type LocalArtist = {
@@ -55,7 +57,10 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   const localAlbums = await LocalFetcher.getArtistAlbums(artistId);
   if (localAlbums.length) return localAlbums;
 
-  const albums = await RemoteFetcher.getArtistAlbums(artistId);
+  const { data: albums, success: albumSuccess } =
+    await RemoteFetcher.getArtistAlbums(artistId);
+
+  if (!albumSuccess) return [];
 
   console.log(`Got ${albums.length} albums`);
   const tracksByAlbum = await Promise.all(
@@ -65,17 +70,26 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
     )
   );
 
+  if (!requireSuccessfulTracks(tracksByAlbum)) {
+    return [];
+  }
+
   const allTracks = tracksByAlbum
-    .map(([albumId, tracks]) => tracks.map((it) => ({ ...it, albumId })))
+    .map(([albumId, { data: tracks }]) =>
+      tracks.map((it) => ({ ...it, albumId }))
+    )
     .flat();
 
   console.log(`Got ${allTracks.length} tracks from ${albums.length} albums.`);
 
-  const albumRuntimes = tracksByAlbum.reduce((map, [albumId, tracks]) => {
-    const current = map[albumId] ?? 0;
-    map[albumId] = current + sumBy(tracks, (track) => track.duration_ms);
-    return map;
-  }, {} as Record<string, number>);
+  const albumRuntimes = tracksByAlbum.reduce(
+    (map, [albumId, { data: tracks }]) => {
+      const current = map[albumId] ?? 0;
+      map[albumId] = current + sumBy(tracks, (track) => track.duration_ms);
+      return map;
+    },
+    {} as Record<string, number>
+  );
 
   await LocalFetcher.saveAlbums(
     albums.map((album) => ({
@@ -139,4 +153,19 @@ export async function getArtistTrackTiming(
     })),
     time: getTimeUnits(artist.totalRuntime),
   };
+}
+
+type AlbumIdToTrackResponses<
+  R extends APIResponse<TrackItem[]> = APIResponse<TrackItem[]>
+> = Readonly<[string, R]>[];
+function requireSuccessfulTracks(
+  tracks: AlbumIdToTrackResponses
+): tracks is AlbumIdToTrackResponses<APIResponseSuccess<TrackItem[]>> {
+  for (const [, { success }] of tracks) {
+    if (!success) {
+      return false;
+    }
+  }
+
+  return true;
 }
