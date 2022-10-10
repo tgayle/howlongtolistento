@@ -15,15 +15,21 @@ export async function searchArtists(
   query: string,
   limit: number = 5
 ): Promise<SearchArtistResponse> {
-  if (query.trim().length < 3) return [];
+  if (query.trim().length < 2) return [];
 
   const { data: res, success } = await RemoteFetcher.searchArtists(
     query,
     limit
   );
 
-  // TODO: Handle errors
-  if (!success) return [];
+  if (!success) {
+    const localArtists = await LocalFetcher.searchArtists(query, limit);
+    return localArtists.map<LocalArtist>((artist) => ({
+      id: artist.id,
+      name: artist.name,
+      image: artist.image,
+    }));
+  }
 
   return (
     res.artists.items?.map((item) => ({
