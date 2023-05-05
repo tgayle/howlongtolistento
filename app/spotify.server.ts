@@ -37,7 +37,7 @@ export async function searchArtists(
     res.artists.items?.map((item) => ({
       id: item.id,
       name: item.name,
-      image: item.images?.at(-1)?.url || null,
+      image: item.images?.at?.(-1)?.url || null,
     })) ?? []
   );
 }

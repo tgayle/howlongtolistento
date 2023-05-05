@@ -18,7 +18,7 @@ export interface ArtistItem {
   genres: string[];
   href: string;
   id: string;
-  images: Image[];
+  images: null | Image[];
   name: string;
   popularity: number;
   type: EntityType;
