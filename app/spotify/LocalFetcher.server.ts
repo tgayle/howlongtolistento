@@ -40,11 +40,11 @@ class LocalFetcher implements BaseFetcher {
         id,
         name: artist.name,
         totalRuntime: -1,
-        image: artist.images.at(-1)?.url ?? null,
+        image: artist.images?.at(-1)?.url ?? null,
       },
       update: {
         name: artist.name,
-        image: artist.images.at(-1)?.url ?? null,
+        image: artist.images?.at(-1)?.url ?? null,
       },
     });
   }
@@ -88,7 +88,7 @@ class LocalFetcher implements BaseFetcher {
   }
 
   saveArtistTrackMappings(
-    mappings: Prisma.ArtistTrackMappingCreateManyInput[]
+    mappings: Prisma.ArtistTrackMappingCreateManyInput[],
   ) {
     return db.artistTrackMapping.createMany({
       skipDuplicates: true,
@@ -124,7 +124,7 @@ class LocalFetcher implements BaseFetcher {
       track.artists.map((artist) => ({
         trackId: track.id,
         artistId: artist.id,
-      }))
+      })),
     );
 
     await db.$transaction([
@@ -134,7 +134,7 @@ class LocalFetcher implements BaseFetcher {
     ]);
 
     console.log(
-      `Finished inserting ${tracks.length} tracks in ${Date.now() - start}ms`
+      `Finished inserting ${tracks.length} tracks in ${Date.now() - start}ms`,
     );
   }
 }
