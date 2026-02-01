@@ -69,8 +69,19 @@ class LocalFetcher implements BaseFetcher {
       },
       data: {
         totalRuntime: totalTrackLength._sum.runtime ?? 0,
+        lastUpdated: new Date(),
       },
     });
+  }
+
+  async clearArtistCache(artistId: string) {
+    await db.$transaction([
+      db.album.deleteMany({ where: { artistId } }),
+      db.artist.update({
+        where: { id: artistId },
+        data: { totalRuntime: -1, lastUpdated: null },
+      }),
+    ]);
   }
 
   async saveAlbums(albums: Prisma.AlbumCreateManyInput[]) {

@@ -117,11 +117,24 @@ export type TrackTimingResponse = {
   }[];
 };
 
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+function isStale(lastUpdated: Date | null): boolean {
+  if (!lastUpdated) return false;
+  return Date.now() - lastUpdated.getTime() > THREE_DAYS_MS;
+}
+
 export async function getArtistTrackTiming(
   artistId: string
 ): Promise<TrackTimingResponse | null> {
   let artist = await getArtistById(artistId);
   if (!artist) return null;
+
+  if (isStale(artist.lastUpdated)) {
+    console.log(`Artist ${artist.name} cache is stale, clearing...`);
+    await LocalFetcher.clearArtistCache(artistId);
+    artist = (await getArtistById(artistId))!;
+  }
 
   const albums = await getArtistAlbums(artistId);
 

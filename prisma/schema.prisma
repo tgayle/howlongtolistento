@@ -21,11 +21,12 @@ model Track {
 }
 
 model Artist {
-  id           String  @id
+  id           String    @id
   name         String
   totalRuntime Int
   image        String?
   albums       Album[]
+  lastUpdated  DateTime?
 
   ArtistTrackMapping ArtistTrackMapping[]
 }
