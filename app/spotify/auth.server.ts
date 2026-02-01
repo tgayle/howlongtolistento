@@ -1,3 +1,5 @@
+import ky from "ky";
+
 type TokenInfo = { expiration: number; token: string };
 
 declare global {
@@ -20,7 +22,7 @@ export class SpotifyAuth {
 
     console.log("Refreshing token!");
     const signedSecret = Buffer.from(
-      `${process.env.SPOTIFY_ID}:${process.env.SPOTIFY_SECRET}`
+      `${process.env.SPOTIFY_ID}:${process.env.SPOTIFY_SECRET}`,
     ).toString("base64");
 
     const response = await fetch(`${SPOTIFY}/api/token`, {
@@ -45,7 +47,7 @@ export class SpotifyAuth {
 
   static async signedFetch<T>(url: string): Promise<APIResponse<T>> {
     await this.refreshToken();
-    const response = await fetch(url, {
+    const response = await ky(url, {
       headers: {
         Authorization: `Bearer ${global.tokenInfo?.token}`,
       },
@@ -61,7 +63,7 @@ export class SpotifyAuth {
 
     console.warn("Error fetching URL", url);
     console.warn(
-      `  Got response ${response.status} '${await response.text()}'`
+      `  Got response ${response.status} '${await response.text()}'`,
     );
 
     return {
